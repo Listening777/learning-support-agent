@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>知识库管理</title>
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<div class="main"><h2>知识库管理</h2>
+  <!-- 上传区：md/pdf → 自动切片 → 向量化入库 -->
+  <div class="upload-box">
+    <input type="file" id="file" accept=".md,.txt,.pdf" style="margin-right:10px;">
+    <select id="docType">
+      <option value="policy">制度文件</option>
+      <option value="faq">课程 FAQ</option>
+      <option value="guide">学习方法指南</option>
+    </select>
+    <button class="btn" style="margin-left:10px;" onclick="upload()">上传并入库</button>
+    <p style="margin-top:8px;font-size:12px;">支持 markdown/txt/pdf（≤5MB），上传后自动按 500 字切片并向量化</p>
+  </div>
+  <!-- 文档列表：可删除 -->
+  <table><thead><tr>
+    <th>ID</th><th>文件名</th><th>类型</th><th>切片数</th><th>上传时间</th><th>操作</th>
+  </tr></thead><tbody id="rows"></tbody></table>
+</div>
+<script src="/static/admin.js"></script>
+<script>
+async function loadList() {
+  const r = await api("/api/admin/kb/list");
+  rows.innerHTML = r.documents.map(d => `<tr>
+    <td>${d.id}</td><td>${d.filename}</td><td>${d.doc_type}</td>
+    <td>${d.chunk_count}</td><td>${d.created_at.slice(0,19)}</td>
+    <td><button class="btn danger" onclick="del(${d.id})">删除</button></td>
+  </tr>`).join("") || '<tr><td colspan="6">暂无文档，请先上传</td></tr>';
+}
+async function upload() {
+  const f = file.files[0];
+  if (!f) { toast("请选择文件"); return; }
+  const fd = new FormData();
+  fd.append("file", f); fd.append("doc_type", docType.value);
+  const resp = await fetch("/api/admin/kb/upload", {
+    method: "POST", headers: { Authorization: "Bearer " + adminToken() }, body: fd });
+  const r = await resp.json();
+  if (r.code !== 0) { toast(`错误 ${r.code}：${r.message}`); return; }
+  toast(`入库成功：切片 ${r.chunk_count} 片`);
+  file.value = ""; loadList();
+}
+async function del(id) {
+  if (!confirm("确认删除该文档及其向量索引？")) return;
+  const resp = await fetch(`/api/admin/kb/${id}`, {
+    method: "DELETE", headers: { Authorization: "Bearer " + adminToken() } });
+  const r = await resp.json();
+  toast(r.code === 0 ? "已删除" : `错误：${r.message}`);
+  loadList();
+}
+adminGuard().then(ok => { if (ok) { renderNav("kb"); loadList(); } });
+</script>
+</body></html>

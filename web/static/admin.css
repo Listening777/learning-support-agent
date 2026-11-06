@@ -1,0 +1,29 @@
+/* 管理后台公共样式（SaaS 风格） */
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei",sans-serif; background:#f5f7fa; height:100vh; display:flex; }
+.sidebar { width:200px; background:#1f2d3d; color:#cfd8e3; flex-shrink:0; }
+.sidebar h1 { font-size:15px; padding:18px 16px; color:#fff; border-bottom:1px solid #34465c; }
+.nav a { display:block; padding:12px 18px; color:#cfd8e3; text-decoration:none; font-size:14px; }
+.nav a.active, .nav a:hover { background:#34465c; color:#fff; }
+.main { flex:1; padding:24px 32px; overflow-y:auto; }
+.main h2 { font-size:18px; margin-bottom:16px; }
+.cards { display:flex; gap:16px; margin-bottom:24px; }
+.card { background:#fff; border:1px solid #e5e9ef; border-radius:10px; padding:18px 24px; flex:1; }
+.card .num { font-size:26px; font-weight:bold; color:#4a7dbe; }
+.card .label { color:#8a94a6; font-size:13px; margin-top:4px; }
+table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; }
+th, td { padding:10px 14px; border-bottom:1px solid #eef1f5; font-size:13px; text-align:left; }
+th { background:#f0f4f8; color:#5a6b80; }
+.btn { background:#4a7dbe; color:#fff; border:none; border-radius:6px; padding:7px 14px; cursor:pointer; font-size:13px; }
+.btn.danger { background:#d95555; }
+.btn.plain { background:#eef1f5; color:#5a6b80; }
+.risk-high { color:#d95555; font-weight:bold; }
+.risk-medium { color:#d69e2e; font-weight:bold; }
+textarea { width:100%; min-height:180px; border:1px solid #d5dce5; border-radius:8px;
+  padding:12px; font-size:13px; line-height:1.7; font-family:inherit; outline:none; }
+select, input[type=date], input[type=text] { border:1px solid #d5dce5; border-radius:6px; padding:7px 10px; font-size:13px; }
+.upload-box { background:#fff; border:2px dashed #c3d2e2; border-radius:10px;
+  padding:28px; text-align:center; color:#8a94a6; margin-bottom:20px; }
+.toast { position:fixed; top:20px; right:20px; background:#333; color:#fff; padding:10px 18px;
+  border-radius:8px; font-size:13px; display:none; z-index:9; }
+.login-wrap { max-width:400px; margin:60px auto; background:#fff; border-radius:12px; padding:32px; }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>仪表盘</title>
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<div class="main"><h2>仪表盘</h2>
+  <div class="cards" id="cards"></div>
+  <table><thead><tr><th>上线检查项</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td>知识库文档已入库</td><td id="chk1">-</td></tr>
+    <tr><td>系统提示词已配置（存数据库）</td><td id="chk2">-</td></tr>
+    <tr><td>LLM API Key 已配置</td><td id="chk3">-</td></tr>
+    <tr><td>评测用例 30 条已就绪</td><td>tests/eval_cases.json</td></tr>
+  </tbody></table>
+</div>
+<script src="/static/admin.js"></script>
+<script>
+adminGuard().then(ok => { if (ok) {
+  renderNav("dashboard");
+  api("/api/admin/stats").then(r => {
+    const s = r.stats;
+    cards.innerHTML = [["制度文档", s.documents], ["切片总数", s.chunks],
+      ["会话数", s.sessions], ["消息数", s.messages]]
+      .map(c => `<div class="card"><div class="num">${c[1]}</div>
+        <div class="label">${c[0]}</div></div>`).join("");
+    chk1.textContent = s.documents > 0 ? "✅ " + s.documents + " 份" : "⚠️ 未导入";
+    chk2.textContent = "已配置（数据库动态读取）";
+  });
+  fetch("/api/health").then(x => x.json()).then(r =>
+    chk3.textContent = "见 .env 配置（LLM_API_KEY）");
+}});
+</script>
+</body></html>

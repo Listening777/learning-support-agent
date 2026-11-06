@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>登录</title>
+<link rel="stylesheet" href="/static/admin.css">
+<style>
+.login-wrap input { width:100%; border:1px solid #d5dce5; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:14px; outline:none; }
+.login-wrap button { width:100%; background:#4a7dbe; color:#fff; border:none; border-radius:8px; padding:11px; cursor:pointer; font-size:14px; }
+.err { color:#d95555; font-size:13px; margin-bottom:8px; min-height:16px; }
+</style></head>
+<body>
+<!-- 管理后台登录页（学生/管理员共用登录接口，按角色跳转） -->
+<div class="login-wrap">
+  <h2 style="margin-bottom:18px;">管理后台登录</h2>
+  <div class="err" id="err"></div>
+  <input id="u" placeholder="管理员用户名（演示：admin）">
+  <input id="p" type="password" placeholder="密码（演示：admin123）">
+  <button onclick="doLogin()">登 录</button>
+  <p style="margin-top:12px;font-size:12px;color:#999;">学生端请前往 <a href="/chat">/chat</a></p>
+</div>
+<script>
+async function doLogin() {
+  const r = await fetch("/api/auth/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: u.value.trim(), password: p.value })
+  }).then(x => x.json());
+  if (r.code !== 0) { err.textContent = r.message; return; }
+  if (r.role !== "admin") { err.textContent = "该入口仅限管理员登录"; return; }
+  localStorage.setItem("token", r.token);
+  location.href = "/admin/dashboard";
+}
+p.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+</script>
+</body></html>

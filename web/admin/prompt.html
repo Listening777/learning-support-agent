@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>提示词模板管理</title>
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<div class="main"><h2>提示词模板管理</h2>
+  <p style="font-size:13px;color:#8a94a6;margin-bottom:12px;">
+    修改保存后<b style="color:#4a7dbe;">立即对问答生效</b>（存数据库，不写死在代码里）。
+    系统强制追加的工具调用规则段不可编辑。</p>
+  <textarea id="promptBox" placeholder="加载中…"></textarea>
+  <div style="margin-top:14px;">
+    <button class="btn" onclick="save()">保存并生效</button>
+    <button class="btn plain" onclick="reset()">恢复默认模板</button>
+  </div>
+</div>
+<script src="/static/admin.js"></script>
+<script>
+async function load() {
+  const r = await api("/api/admin/prompt");
+  promptBox.value = r.content;
+}
+async function save() {
+  const r = await api("/api/admin/prompt", {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: promptBox.value }) });
+  toast(r.message); load();
+}
+async function reset() {
+  if (!confirm("确认恢复默认模板？当前修改将被覆盖。")) return;
+  const r = await api("/api/admin/prompt/reset", { method: "POST" });
+  toast(r.message); load();
+}
+adminGuard().then(ok => { if (ok) { renderNav("prompt"); load(); } });
+</script>
+</body></html>

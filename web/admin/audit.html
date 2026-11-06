@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>对话审计</title>
+<link rel="stylesheet" href="/static/admin.css"></head>
+<body>
+<div class="main"><h2>对话审计</h2>
+  <!-- 筛选栏：按学生 / 时间（提示词5 第4项） -->
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+    <input type="text" id="studentId" placeholder="学生ID（可选）" style="width:150px;">
+    <input type="date" id="dateFrom"> <span>至</span> <input type="date" id="dateTo">
+    <button class="btn" onclick="load()">筛选</button>
+    <span style="font-size:12px;color:#8a94a6;">红色=疑似心理危机(high) 黄色=超范围/注入(medium)，需转人工跟进</span>
+  </div>
+  <table><thead><tr>
+    <th>时间</th><th>学生</th><th>问题</th><th>风险标记</th>
+  </tr></thead><tbody id="rows"></tbody></table>
+</div>
+<script src="/static/admin.js"></script>
+<script>
+async function load() {
+  const q = new URLSearchParams();
+  if (studentId.value) q.set("student_id", studentId.value);
+  if (dateFrom.value) q.set("date_from", dateFrom.value);
+  if (dateTo.value) q.set("date_to", dateTo.value);
+  const r = await api("/api/admin/audit?" + q.toString());
+  rows.innerHTML = r.records.map(x => {
+    const marks = x.risk.map(k =>
+      `<span class="risk-${k.level}">● ${k.note}</span>`).join("<br>") || "—";
+    return `<tr style="${x.risk.some(k=>k.level==='high')?'background:#fdf0f0;':''}">
+      <td>${x.created_at.slice(0,19)}</td>
+      <td>${x.real_name}(${x.username})</td>
+      <td style="max-width:420px;">${x.content.slice(0,80)}</td>
+      <td>${marks}</td></tr>`;
+  }).join("") || '<tr><td colspan="4">无记录</td></tr>';
+}
+adminGuard().then(ok => { if (ok) { renderNav("audit"); load(); } });
+</script>
+</body></html>
