@@ -1,0 +1,22 @@
+# 非机密默认配置（密钥一律放 .env，不入库）
+app:
+  name: learning-support-agent
+  port: 8000
+
+chat:
+  history_rounds: 6        # 每次请求携带的最近历史轮数
+  max_question_length: 500
+
+rag:
+  chunk_size: 500          # 制度文档切片大小（字）
+  top_k: 3                 # 混合检索返回条数
+  vector_weight: 0.6       # 向量分权重（BM25 占 0.4）
+
+agent:
+  max_rounds: 5            # Agent 执行循环轮数上限
+
+rate_limit:
+  chat_per_minute: 6       # 单用户每分钟问答次数
+
+upload:
+  max_mb: 5                # 知识库上传大小限制
