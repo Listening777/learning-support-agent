@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习支持助手 · 学生问答</title>
+<style>
+  /* ── 简洁 SaaS 风格 ── */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Microsoft YaHei",sans-serif; background:#f5f7fa; height:100vh; display:flex; }
+  /* 侧边栏：会话列表 */
+  .sidebar { width:240px; background:#1f2d3d; color:#cfd8e3; display:flex; flex-direction:column; }
+  .sidebar h1 { font-size:16px; padding:18px 16px; color:#fff; border-bottom:1px solid #34465c; }
+  .session-list { flex:1; overflow-y:auto; padding:8px; }
+  .session-item { padding:10px 12px; border-radius:6px; cursor:pointer; font-size:13px; margin-bottom:4px; }
+  .session-item:hover, .session-item.active { background:#34465c; color:#fff; }
+  .sidebar .user { padding:14px 16px; border-top:1px solid #34465c; font-size:13px; }
+  .sidebar .user button { float:right; background:none; border:1px solid #5a708a; color:#cfd8e3;
+    border-radius:4px; padding:2px 8px; cursor:pointer; font-size:12px; }
+  /* 主区域 */
+  .main { flex:1; display:flex; flex-direction:column; }
+  .header { background:#fff; padding:14px 24px; border-bottom:1px solid #e5e9ef; font-size:16px; font-weight:bold; }
+  .messages { flex:1; overflow-y:auto; padding:24px; }
+  .bubble { max-width:72%; padding:12px 16px; border-radius:12px; margin-bottom:16px;
+    white-space:pre-wrap; line-height:1.7; font-size:14px; }
+  .bubble.user { background:#4a7dbe; color:#fff; margin-left:auto; }
+  .bubble.assistant { background:#fff; border:1px solid #e5e9ef; }
+  .status { color:#999; font-size:13px; padding:4px 8px; margin-bottom:8px; }
+  .citations { font-size:12px; color:#8a94a6; background:#f0f4f8; border-radius:8px;
+    padding:8px 12px; margin-bottom:16px; }
+  .citations b { color:#4a7dbe; }
+  .typing::after { content:"▌"; animation:blink 1s infinite; color:#4a7dbe; }
+  @keyframes blink { 50% { opacity:0; } }
+  /* 输入区 */
+  .input-bar { background:#fff; border-top:1px solid #e5e9ef; padding:16px 24px; display:flex; gap:12px; }
+  .input-bar input { flex:1; border:1px solid #d5dce5; border-radius:8px; padding:12px 16px; font-size:14px; outline:none; }
+  .input-bar input:focus { border-color:#4a7dbe; }
+  .input-bar button { background:#4a7dbe; color:#fff; border:none; border-radius:8px;
+    padding:12px 28px; cursor:pointer; font-size:14px; }
+  .input-bar button:disabled { background:#a9c1dd; cursor:not-allowed; }
+  /* 登录浮层 */
+  .login-mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex;
+    align-items:center; justify-content:center; z-index:10; }
+  .login-box { background:#fff; border-radius:12px; padding:32px; width:320px; }
+  .login-box h2 { margin-bottom:18px; font-size:18px; }
+  .login-box input { width:100%; border:1px solid #d5dce5; border-radius:8px; padding:10px 14px;
+    margin-bottom:12px; font-size:14px; outline:none; }
+  .login-box button { width:100%; background:#4a7dbe; color:#fff; border:none; border-radius:8px;
+    padding:11px; cursor:pointer; font-size:14px; }
+  .login-err { color:#d95555; font-size:13px; margin-bottom:8px; min-height:16px; }
+  .tip { color:#999; font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+<!-- 侧边栏：会话列表 -->
+<div class="sidebar">
+  <h1>学习支持助手</h1>
+  <div class="session-list" id="sessionList"></div>
+  <div class="user"><span id="userName">未登录</span>
+    <button onclick="logout()">退出</button></div>
+</div>
+
+<!-- 主聊天区 -->
+<div class="main">
+  <div class="header">学生问答 · 学习支持与辅导协作</div>
+  <div class="messages" id="messages"></div>
+  <div class="input-bar">
+    <input id="question" placeholder="输入你的问题，Enter 发送（如：每周最多预约几次一对一辅导？）">
+    <button id="sendBtn" onclick="send()">发送</button>
+  </div>
+</div>
+
+<!-- 登录浮层 -->
+<div class="login-mask" id="loginMask">
+  <div class="login-box">
+    <h2>登录学习支持助手</h2>
+    <div class="login-err" id="loginErr"></div>
+    <input id="loginUser" placeholder="学号 / 用户名">
+    <input id="loginPass" type="password" placeholder="密码">
+    <button onclick="login()">登 录</button>
+    <div class="tip">演示账号：student / 123456</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════ 基础：token 管理 ═══════════ */
+const token = () => localStorage.getItem("token");
+function saveToken(t) { localStorage.setItem("token", t); }
+function logout() { localStorage.removeItem("token"); location.reload(); }
+
+/* 页面加载：先校验登录态 */
+window.onload = async () => {
+  if (!token()) { showLogin(); return; }
+  const r = await fetch("/api/auth/me", { headers: { Authorization: "Bearer " + token() } })
+    .then(x => x.json()).catch(() => null);
+  if (!r || r.code !== 0) { localStorage.removeItem("token"); showLogin(); return; }
+  document.getElementById("userName").textContent = r.name || r.role;
+  document.getElementById("loginMask").style.display = "none";
+  loadSessions();
+};
+
+function showLogin() { document.getElementById("loginMask").style.display = "flex"; }
+
+async function login() {
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const r = await fetch("/api/auth/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }) }).then(x => x.json());
+  if (r.code !== 0) { document.getElementById("loginErr").textContent = r.message; return; }
+  if (r.role !== "student") { document.getElementById("loginErr").textContent = "请使用学生账号登录（管理员入口：/admin）"; return; }
+  saveToken(r.token); location.reload();
+}
+
+/* ═══════════ 会话列表 ═══════════ */
+async function loadSessions() {
+  const r = await fetch("/api/sessions", { headers: { Authorization: "Bearer " + token() } })
+    .then(x => x.json());
+  const list = document.getElementById("sessionList");
+  list.innerHTML = "";
+  (r.sessions || []).forEach(s => {
+    const div = document.createElement("div");
+    div.className = "session-item"; div.textContent = s.title || s.id;
+    div.onclick = () => openSession(s.id, div);
+    list.appendChild(div);
+  });
+  if (!(r.sessions || []).length) {
+    list.innerHTML = '<div class="session-item">开始新的对话 →</div>';
+  }
+}
+
+async function openSession(sid, el) {
+  document.querySelectorAll(".session-item").forEach(x => x.classList.remove("active"));
+  if (el) el.classList.add("active");
+  currentSession = sid;
+  document.getElementById("messages").innerHTML = "";
+  const r = await fetch(`/api/sessions/${sid}/messages`,
+    { headers: { Authorization: "Bearer " + token() } }).then(x => x.json());
+  (r.messages || []).forEach(m => {
+    addBubble(m.role === "user" ? "user" : "assistant", m.content);
+    if (m.citations && m.citations.length) addCitations(m.citations);
+  });
+}
+
+/* ═══════════ 消息渲染 ═══════════ */
+let currentSession = null;
+const box = () => document.getElementById("messages");
+
+function addBubble(role, text, typing) {
+  const div = document.createElement("div");
+  div.className = "bubble " + role + (typing ? " typing" : "");
+  div.textContent = text;
+  box().appendChild(div); box().scrollTop = box().scrollHeight;
+  return div;
+}
+function addStatus(text) {
+  const div = document.createElement("div");
+  div.className = "status"; div.textContent = text; div.id = "statusBar";
+  box().appendChild(div); box().scrollTop = box().scrollHeight;
+  return div;
+}
+function addCitations(citations) {
+  const div = document.createElement("div");
+  div.className = "citations";
+  div.innerHTML = "<b>引用来源</b><br>" + citations.map(c =>
+    `· ${c.filename}：${c.snippet.slice(0, 60)}…`).join("<br>");
+  box().appendChild(div); box().scrollTop = box().scrollHeight;
+}
+
+/* ═══════════ 发送与 SSE 流式解析（POST 无法用原生 EventSource，手动解析流） ═══════════ */
+async function send() {
+  const input = document.getElementById("question");
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = ""; setSending(true);
+  addBubble("user", question);
+  const reply = addBubble("assistant", "", true);   // 打字机气泡
+  let statusBar = null, buffer = "";
+
+  try {
+    const resp = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json",
+                 Authorization: "Bearer " + token() },
+      body: JSON.stringify({ session_id: currentSession, question })
+    });
+    // 非 SSE 的 JSON 错误响应（参数/限流/权限错误）
+    const ct = resp.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      const e = await resp.json();
+      reply.classList.remove("typing"); reply.textContent = "错误 " + e.code + "：" + e.message;
+      setSending(false); return;
+    }
+
+    // 手动逐帧解析 SSE 流：event: xxx / data: {...}
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const frames = buf.split("\n\n");
+      buf = frames.pop();                       // 留下半帧
+      for (const frame of frames) {
+        const ev = frame.match(/event: (.+)/)?.[1];
+        const data = frame.match(/data: (.+)/)?.[1];
+        if (!ev || !data) continue;
+        const payload = JSON.parse(data);
+        if (ev === "session") { currentSession = payload.session_id; }
+        if (ev === "status") { statusBar = addStatus(payload.message); }
+        if (ev === "delta") {
+          if (statusBar) { statusBar.remove(); statusBar = null; }
+          buffer += payload.content;
+          reply.textContent = buffer;           // 打字机效果
+          box().scrollTop = box().scrollHeight;
+        }
+        if (ev === "citations") { addCitations(payload.citations); }
+        if (ev === "error") {
+          reply.classList.remove("typing");
+          reply.textContent += (buffer ? "\n\n" : "") + "⚠ " + payload.message;
+        }
+        if (ev === "done") { loadSessions(); }
+      }
+    }
+  } catch (e) {
+    reply.textContent += (buffer ? "\n\n" : "") + "⚠ 网络异常，请稍后重试";
+  }
+  reply.classList.remove("typing");
+  setSending(false);
+}
+
+function setSending(on) { document.getElementById("sendBtn").disabled = on; }
+document.getElementById("question").addEventListener("keydown",
+  e => { if (e.key === "Enter") send(); });
+</script>
+</body>
+</html>
