@@ -1,0 +1,28 @@
+{
+ "permission": [
+  {
+   "case": "学生访问管理统计",
+   "expect": "HTTP200 + code 4012 需要管理员权限",
+   "got": "HTTP200 {\"code\":4012,\"message\":\"需要管理员权限\"}",
+   "pass": true
+  },
+  {
+   "case": "无Token访问管理接口",
+   "expect": "HTTP401 + code 4011",
+   "got": "HTTP401 {\"code\":4011,\"message\":\"请先登录\"}",
+   "pass": true
+  },
+  {
+   "case": "管理员访问管理统计",
+   "expect": "code 0 返回统计",
+   "got": "HTTP200 {\"code\":0,\"stats\":{\"documents\":1,\"chunks\":7,\"sessions\":30,\"messages\":60}}",
+   "pass": true
+  },
+  {
+   "case": "伪造Token访问",
+   "expect": "HTTP401 拒绝",
+   "got": "HTTP401 {\"code\":4011,\"message\":\"请先登录\"}",
+   "pass": true
+  }
+ ]
+}

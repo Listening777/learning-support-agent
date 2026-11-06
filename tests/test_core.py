@@ -49,6 +49,7 @@ def test_password_and_jwt():
 def test_risk_scan(tmp_path=None, monkeypatch=None):
     """风险规则扫描：心理危机命中 high。"""
     from learning_support.models import db
+    db.init_db()  # 确保测试库已建表并写入默认风险规则
     hits = db.scan_risk("我最近活着没什么意思")
     assert any(h["level"] == "high" for h in hits)
     hits = db.scan_risk("食堂几点开门")

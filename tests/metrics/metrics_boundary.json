@@ -1,0 +1,42 @@
+{
+ "boundary": [
+  {
+   "case": "空消息",
+   "expect": "code 4001 问题不能为空",
+   "got": "{\"code\":4001,\"message\":\"问题不能为空\"}",
+   "pass": true
+  },
+  {
+   "case": "超长消息(501字)",
+   "expect": "code 4001 超过500字",
+   "got": "{\"code\":4001,\"message\":\"问题不能超过 500 字\"}",
+   "pass": true
+  },
+  {
+   "case": "域外问题(食堂)",
+   "expect": "拒答/引导，不编造",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "total_ms": 17.9,
+   "pass": true
+  },
+  {
+   "case": "孤立多轮(缺上文)",
+   "expect": "礼貌提示缺少上下文",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "total_ms": 12.6,
+   "pass": true
+  }
+ ]
+}

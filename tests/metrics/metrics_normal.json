@@ -1,0 +1,74 @@
+{
+ "normal": [
+  {
+   "question": "每名学生每周最多可以预约几次一对一辅导？",
+   "expected_keyword": "2 次",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "first_token_ms": 18.6,
+   "total_ms": 18.7,
+   "pass": true
+  },
+  {
+   "question": "一对一辅导每次时长是多少分钟？",
+   "expected_keyword": "45",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "first_token_ms": 12.5,
+   "total_ms": 12.6,
+   "pass": true
+  },
+  {
+   "question": "预约取消需要提前多久？",
+   "expected_keyword": "24 小时",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "first_token_ms": 12.4,
+   "total_ms": 12.5,
+   "pass": true
+  },
+  {
+   "question": "高等数学建议每周复习多少小时？",
+   "expected_keyword": "6 小时",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "first_token_ms": 11.9,
+   "total_ms": 12.0,
+   "pass": true
+  },
+  {
+   "question": "学生辅导记录保留多久？",
+   "expected_keyword": "一学年",
+   "events": [
+    "session",
+    "status",
+    "delta",
+    "citations",
+    "done"
+   ],
+   "first_token_ms": 12.0,
+   "total_ms": 12.1,
+   "pass": true
+  }
+ ]
+}
