@@ -21,9 +21,24 @@ WEB = Path(__file__).resolve().parents[2] / "web"
 
 @app.on_event("startup")
 def startup():
-    """启动初始化：建库建表 + 加载知识库索引。"""
+    """启动初始化：建库建表 + 自动灌入默认制度语料 + 加载知识库索引。
+
+    云部署（数据库为空）时自动把 data/policy 下的制度文档灌入知识库，
+    无需人工上传即可开箱问答；本地已有数据时跳过，不重复灌入。
+    """
     db.init_db()
     from learning_support.services import kb_service
+    conn = db.get_conn()
+    has_docs = conn.execute(
+        "SELECT 1 FROM policy_documents WHERE status='active' LIMIT 1").fetchone()
+    conn.close()
+    if not has_docs:
+        policy_dir = config.POLICY_DIR
+        if policy_dir.exists():
+            for md in sorted(policy_dir.glob("*.md")):
+                kb_service.upload_document(md.name, md.read_bytes(),
+                                           doc_type="policy", uploader_id=1)
+            print("[启动] 首次部署：已自动灌入默认制度语料")
     n = kb_service.rebuild_index()
     print(f"[启动] 数据库就绪，知识库索引加载 {n} 个切片")
 
